@@ -1,4 +1,5 @@
 import discord
+import re
 
 #    Cog to reformat messages to allow for animated emotes, regardless of nitro status.
 #    Copyright (C) 2017 Valentijn <ev1l0rd>
@@ -25,33 +26,43 @@ class Animotes:
         if not message.author.bot:
             channel = message.channel
             content = emote_corrector(self, message)
-            if content is not False:
+            if content:
                 await message.delete()
                 await channel.send(content=content)
 
 
 def emote_corrector(self, message):
     '''Locate and change any emotes to emote objects'''
-    content_list = message.content.split(":")
-    new_content_list = []
-    for potential_emote in range(0, len(content_list)):
-        temp = discord.utils.get(self.bot.emojis, name=content_list[potential_emote])
-        if type(temp) is discord.Emoji:
-            if not temp.animated:
-                return False
-            else:
-                new_content_list.append(temp)
-        else:
-            new_content_list.append(content_list[potential_emote])
+    r = re.compile(r':\w+:')
+    found = r.findall(message.content)
+    emotes = []
+    for em in found:
+        temp = discord.utils.get(self.bot.emojis, name=em[1:-1])
+        try:
+            if temp.animated:
+                emotes.append((em, str(temp)))
+        except AttributeError:
+            pass  # We only care about catching this, not doing anything with it
 
-    if all(type(contentpart) is not discord.Emoji for contentpart in new_content_list):
-        return False
+    if emotes:
+        temp = message.content
+        for em in set(emotes):
+            temp = temp.replace(*em)
+    else:
+        return None
 
-    new_content_list = [str(contentpart) for contentpart in new_content_list if contentpart is not None]
+    escape = re.compile(r':*<\w?:\w+:\w+>')
+    # This escapes all colons that come before an emoji;
+    # thanks to Discord shenanigans, this is needed.
+    for esc in set(escape.findall(temp)):
+        temp_esc = esc.split('<')
+        esc_s = '{}<{}'.format(temp_esc[0].replace(':', '\:'), temp_esc[1])
+        print(esc)
+        temp = temp.replace(esc, esc_s)
 
-    new_content_list.insert(0, "**<{}>** ".format(message.author.display_name))
+    temp = '**<{}>** '.format(message.author.name) + temp
 
-    return "".join(new_content_list)
+    return temp
 
 
 def setup(bot):
