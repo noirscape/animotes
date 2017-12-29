@@ -13,13 +13,6 @@ If you want to use the bot framework, download the repository and edit config.ya
 ## Limitations
 
 - The bot cannot differ between normal users and nitro users. Everyone using animated emotes will have their messages put in this bot. This is a limitation of the Discord API/discordpy.
-- Due to the way message filtering works, the following syntax also produces animated emotes (or variants on this):
-
-> emotename:text
-
-> text:emotename
-
-- If you use any animated emotes in a message and use the semicolon somewhere else, the semicolon will be removed.
 - This also works on multiple servers (creating a fake global emote system), since the bot checks for _all_ the emotes it has access to, rather than the ones in the current Guild/server.
 - No wumboji.
 
