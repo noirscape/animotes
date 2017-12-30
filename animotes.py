@@ -34,6 +34,9 @@ class Animotes:
 def emote_corrector(self, message):
     '''Locate and change any emotes to emote objects'''
     r = re.compile(r':\w+:')
+    _r = re.compile(r'<a:\w+:\w+>')
+    if _r.search(message.content):
+        return None
     found = r.findall(message.content)
     emotes = []
     for em in found:
