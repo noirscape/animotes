@@ -1,5 +1,8 @@
 import discord
+from discord.ext import commands
 import re
+import os
+import json
 
 #    Cog to reformat messages to allow for animated emotes, regardless of nitro status.
 #    Copyright (C) 2017 Valentijn <ev1l0rd>
@@ -21,14 +24,37 @@ import re
 class Animotes:
     def __init__(self, bot):
         self.bot = bot
+        if not os.path.isfile('animotes.json'):
+            animotes = {
+                'opted_in': []
+            }
+            with open('animotes.json', 'w') as outfile:
+                json.dump(animotes, outfile)
 
     async def on_message(self, message):
-        if not message.author.bot:
+        with open('animotes.json', 'r') as animotes_config:
+            animotes = json.load(animotes_config)
+        if not message.author.bot and message.author.id in animotes['opted_in']:
             channel = message.channel
             content = emote_corrector(self, message)
             if content:
                 await message.delete()
                 await channel.send(content=content)
+
+    @commands.command(aliases=['unregister'])
+    async def register(self, ctx):
+        with open('animotes.json', 'r') as animotes_config:
+            animotes = json.load(animotes_config)
+        if not ctx.message.author.id in animotes['opted_in']:
+            animotes['opted_in'].append(ctx.message.author.id)
+            message = 'Succesfully opted in to animated emote conversion.'
+        else:
+            animotes['opted_in'].remove(ctx.message.author.id)
+            message = 'Succesfully opted out to animated emote conversion.'
+
+        with open('animotes.json', 'w') as animotes_config:
+            json.dump(animotes, animotes_config)
+        await ctx.message.author.send(content=message)
 
 
 def emote_corrector(self, message):
@@ -60,7 +86,6 @@ def emote_corrector(self, message):
     for esc in set(escape.findall(temp)):
         temp_esc = esc.split('<')
         esc_s = '{}<{}'.format(temp_esc[0].replace(':', '\:'), temp_esc[1])
-        print(esc)
         temp = temp.replace(esc, esc_s)
 
     temp = '**<{}>** '.format(message.author.name) + temp
