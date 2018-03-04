@@ -45,6 +45,10 @@ class Animotes:
             message = 'You sucessfully have been opted into using using animated emotes.'
 
         self.conn.commit()
+        try:
+            await ctx.message.delete()
+        except discord.errors.Forbidden:
+            pass
         await ctx.message.author.send(content=message)
 
 
