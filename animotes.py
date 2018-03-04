@@ -1,8 +1,7 @@
 import discord
 from discord.ext import commands
 import re
-import os
-import json
+import sqlite3
 
 #    Cog to reformat messages to allow for animated emotes, regardless of nitro status.
 #    Copyright (C) 2017 Valentijn <ev1l0rd>
@@ -24,17 +23,12 @@ import json
 class Animotes:
     def __init__(self, bot):
         self.bot = bot
-        if not os.path.isfile('animotes.json'):
-            animotes = {
-                'opted_in': []
-            }
-            with open('animotes.json', 'w') as outfile:
-                json.dump(animotes, outfile)
+        self.conn = sqlite3.connect('animotes.sqlite3')
+        create_database(self.conn)
+        self.conn.commit()
 
     async def on_message(self, message):
-        with open('animotes.json', 'r') as animotes_config:
-            animotes = json.load(animotes_config)
-        if not message.author.bot and message.author.id in animotes['opted_in']:
+        if not message.author.bot and self.conn.cursor().execute('SELECT * FROM animotes WHERE user_id=?', (message.author.id,)).fetchone():
             channel = message.channel
             content = emote_corrector(self, message)
             if content:
@@ -43,17 +37,14 @@ class Animotes:
 
     @commands.command(aliases=['unregister'])
     async def register(self, ctx):
-        with open('animotes.json', 'r') as animotes_config:
-            animotes = json.load(animotes_config)
-        if not ctx.message.author.id in animotes['opted_in']:
-            animotes['opted_in'].append(ctx.message.author.id)
-            message = 'Succesfully opted in to animated emote conversion.'
+        if self.conn.cursor().execute('SELECT * FROM animotes WHERE user_id=?', (ctx.author.id,)).fetchone():
+            self.conn.cursor().execute('DELETE FROM animotes WHERE user_id=?', (ctx.author.id,))
+            message = 'You sucessfully have been opted out of using animated emotes.'
         else:
-            animotes['opted_in'].remove(ctx.message.author.id)
-            message = 'Succesfully opted out to animated emote conversion.'
+            self.conn.cursor().execute('INSERT INTO animotes VALUES (?)', (ctx.author.id,))
+            message = 'You sucessfully have been opted into using using animated emotes.'
 
-        with open('animotes.json', 'w') as animotes_config:
-            json.dump(animotes, animotes_config)
+        self.conn.commit()
         await ctx.message.author.send(content=message)
 
 
@@ -95,3 +86,10 @@ def emote_corrector(self, message):
 
 def setup(bot):
     bot.add_cog(Animotes(bot))
+
+
+def create_database(conn):
+    cursor = conn.cursor()
+    cursor.execute('''CREATE TABLE IF NOT EXISTS animotes (
+            user_id integer PRIMARY KEY
+        );''')
