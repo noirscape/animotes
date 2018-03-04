@@ -87,7 +87,7 @@ def emote_corrector(self, message):
         esc_s = '{}<{}'.format(temp_esc[0].replace(':', '\:'), temp_esc[1])
         temp = temp.replace(esc, esc_s)
 
-    temp = '**<{}>** '.format(message.author.name) + temp
+    temp = '**<{}#{}>** '.format(message.author.display_name, message.author.discriminator) + temp
 
     return temp
 
