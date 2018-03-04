@@ -1,3 +1,4 @@
+import discord
 import yaml
 from discord.ext import commands
 
@@ -27,5 +28,6 @@ async def on_ready():
     print('------------')
     load_cog('animotes')
     print('Loaded animotes cog...')
+    await bot.change_presence(game=discord.Game(name='Use ' + config['prefix'] + 'register to enable me'))
 
 bot.run(config['token'])
