@@ -32,8 +32,12 @@ class Animotes:
             channel = message.channel
             content = emote_corrector(self, message)
             if content:
-                await message.delete()
-                await channel.send(content=content)
+                try:
+                    await message.delete()
+                except Exception:
+                    pass
+                else:
+                    await channel.send(content=content)
 
     @commands.command(aliases=['unregister'])
     async def register(self, ctx):
