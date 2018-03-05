@@ -63,13 +63,13 @@ class Animotes:
         for guild in self.bot.guilds:
             emoji = guild.emojis
             if emoji:
-                message.append(f'Emoji\'s in guild __{guild.name}__:')
+                message.append(f'Emotes in guild __{guild.name}__:')
                 for emoji in guild.emojis:
                     if emoji.animated:
                         message.append(f'**{emoji.name}**: {emoji}')
         if not message:
-            message.append('I\'m not in any guilds with emoji\'s.')
-            message.append('Try adding me to a guild with emoji\'s.')
+            message.append('I\'m not in any guilds with emotes.')
+            message.append('Try adding me to a guild with emotes.')
 
         message = "\n".join(message)
         await ctx.author.send(content=message)
