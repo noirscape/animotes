@@ -59,20 +59,21 @@ class Animotes:
     @commands.command()
     async def list_emotes(self, ctx):
         '''Lists all animated emotes the bot 'knows'.'''
-        message = []
+        message = commands.Paginator(prefix='', suffix='')
         for guild in self.bot.guilds:
             emoji = guild.emojis
             if emoji:
-                message.append(f'Emotes in guild __{guild.name}__:')
+                message.add_line(f'Emotes in guild __{guild.name}__:')
                 for emoji in guild.emojis:
                     if emoji.animated:
-                        message.append(f'**{emoji.name}**: {emoji}')
+                        message.add_line(f'**{emoji.name}**: {emoji}')
+                message.add_line('')
         if not message:
-            message.append('I\'m not in any guilds with emotes.')
-            message.append('Try adding me to a guild with emotes.')
+            message.add_line('I\'m not in any guilds with emotes.')
+            message.add_line('Try adding me to a guild with emotes.')
 
-        message = "\n".join(message)
-        await ctx.author.send(content=message)
+        for page in message.pages:
+            await ctx.author.send(content=page)
 
 
 def emote_corrector(self, message):
