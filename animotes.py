@@ -42,31 +42,47 @@ class Animotes:
         except Exception:
             pass
 
+    async def parse_attachments(self, message, temporary_dir):
+        for i, attachment in enumerate(message.attachments):
+            await attachment.save('{0}/{1}'.format(temporary_dir, i))
+
+        for filename in os.listdir(temporary_dir):
+            try:
+                mimetype = magic.from_file('{0}/{1}'.format(temporary_dir, filename), mime=True)
+                mimetype = mimetypes.guess_extension(mimetype)
+                if mimetype:
+                    os.rename(src='{0}/{1}'.format(temporary_dir, filename), dst='{0}/{1}{2}'.format(temporary_dir, filename, mimetype))
+            except Exception as e:
+                pass
+
+        files = []
+        for filename in os.listdir(temporary_dir):
+            files.append(discord.File(os.path.abspath('{0}/{1}'.format(temporary_dir, filename))))
+        return files
+
+    def parse_embeds(self, message):
+        return message.embeds[0]
+
     async def on_message(self, message):
         if not message.author.bot and self.conn.cursor().execute('SELECT * FROM animotes WHERE user_id=?', (message.author.id,)).fetchone():
             channel = message.channel
             content = emote_corrector(self, message)
             if content:
-                if message.attachments:
+                if message.attachments and message.embeds:
                     with tempfile.TemporaryDirectory() as temporary_dir:
-                        for i, attachment in enumerate(message.attachments):
-                            await attachment.save('{0}/{1}'.format(temporary_dir, i))
-
-                        for filename in os.listdir(temporary_dir):
-                            try:
-                                mimetype = magic.from_file('{0}/{1}'.format(temporary_dir, filename), mime=True)
-                                mimetype = mimetypes.guess_extension(mimetype)
-                                if mimetype:
-                                    os.rename(src='{0}/{1}'.format(temporary_dir, filename), dst='{0}/{1}{2}'.format(temporary_dir, filename, mimetype))
-                            except Exception as e:
-                                pass
-
-                        files = []
-                        for filename in os.listdir(temporary_dir):
-                            files.append(discord.File(os.path.abspath('{0}/{1}'.format(temporary_dir, filename))))
-
+                        files = await self.parse_attachments(message, temporary_dir)
+                        embed = self.parse_embeds(message)
                         await self.remove_original_message(message)
                         await channel.send(content=content, files=files)
+                elif message.attachments:
+                    with tempfile.TemporaryDirectory() as temporary_dir:
+                        files = await self.parse_attachments(message, temporary_dir)
+                        await self.remove_original_message(message)
+                        await channel.send(content=content, files=files)
+                elif message.embeds:
+                    embed = self.parse_embeds(message)
+                    await self.remove_original_message(message)
+                    await channel.send(content=content, embed=embed)
                 else:
                     await self.remove_original_message(message)
                     await channel.send(content=content)
