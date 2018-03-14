@@ -6,6 +6,7 @@ import os
 import mimetypes
 import magic
 import shutil
+import tempfile
 
 #    Cog to reformat messages to allow for animated emotes, regardless of nitro status.
 #    Copyright (C) 2017 Valentijn <ev1l0rd>
@@ -47,26 +48,25 @@ class Animotes:
             content = emote_corrector(self, message)
             if content:
                 if message.attachments:
-                    os.makedirs('tmp')
-                    for i, attachment in enumerate(message.attachments):
-                        await attachment.save('tmp/{}'.format(i))
+                    with tempfile.TemporaryDirectory() as temporary_dir:
+                        for i, attachment in enumerate(message.attachments):
+                            await attachment.save('{0}/{1}'.format(temporary_dir, i))
 
-                    for filename in os.listdir('tmp/'):
-                        try:
-                            mimetype = magic.from_file('tmp/{}'.format(filename), mime=True)
-                            mimetype = mimetypes.guess_extension(mimetype)
-                            if mimetype:
-                                os.rename(src='tmp/{}'.format(filename), dst='tmp/{0}{1}'.format(filename, mimetype))
-                        except Exception as e:
-                            pass
+                        for filename in os.listdir(temporary_dir):
+                            try:
+                                mimetype = magic.from_file('{0}/{1}'.format(temporary_dir, filename), mime=True)
+                                mimetype = mimetypes.guess_extension(mimetype)
+                                if mimetype:
+                                    os.rename(src='{0}/{1}'.format(temporary_dir, filename), dst='{0}/{1}{2}'.format(temporary_dir, filename, mimetype))
+                            except Exception as e:
+                                pass
 
-                    files = []
-                    for filename in os.listdir('tmp'):
-                        files.append(discord.File(os.path.abspath('tmp/{}'.format(filename))))
+                        files = []
+                        for filename in os.listdir(temporary_dir):
+                            files.append(discord.File(os.path.abspath('{0}/{1}'.format(temporary_dir, filename))))
 
-                    await self.remove_original_message(message)
-                    await channel.send(content=content, files=files)
-                    shutil.rmtree('tmp/')
+                        await self.remove_original_message(message)
+                        await channel.send(content=content, files=files)
                 else:
                     await self.remove_original_message(message)
                     await channel.send(content=content)
