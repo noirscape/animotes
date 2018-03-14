@@ -60,16 +60,29 @@ class Animotes:
             files.append(discord.File(os.path.abspath('{0}/{1}'.format(temporary_dir, filename))))
         return files
 
+    def parse_embeds(self, message):
+        return message.embeds[0]
+
     async def on_message(self, message):
         if not message.author.bot and self.conn.cursor().execute('SELECT * FROM animotes WHERE user_id=?', (message.author.id,)).fetchone():
             channel = message.channel
             content = emote_corrector(self, message)
             if content:
-                if message.attachments:
+                if message.attachments and message.embeds:
+                    with tempfile.TemporaryDirectory() as temporary_dir:
+                        files = await self.parse_attachments(message, temporary_dir)
+                        embed = self.parse_embeds(message)
+                        await self.remove_original_message(message)
+                        await channel.send(content=content, files=files)
+                elif message.attachments:
                     with tempfile.TemporaryDirectory() as temporary_dir:
                         files = await self.parse_attachments(message, temporary_dir)
                         await self.remove_original_message(message)
                         await channel.send(content=content, files=files)
+                elif message.embeds:
+                    embed = self.parse_embeds(message)
+                    await self.remove_original_message(message)
+                    await channel.send(content=content, embed=embed)
                 else:
                     await self.remove_original_message(message)
                     await channel.send(content=content)
