@@ -1,3 +1,4 @@
 ---
-token:
-prefix: 
+token: # Bot token
+prefix: # Prefix for the commands
+remote_url: # OPTIONAL - LEAVE THIS OUT IF YOU DON'T PLAN ON USING THIS. A valid git remote url. This is used to commit and push the database folder to an external service. You need to specify any tokens or login data in this URL. It is highly recommended to use API tokens over your normal login data!

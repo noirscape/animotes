@@ -1,2 +1,4 @@
 git+https://github.com/Rapptz/discord.py@rewrite
 pyyaml
+git+https://github.com/ev1l0rd/heroku_git_fs.git
+python-magic

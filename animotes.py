@@ -2,6 +2,10 @@ import discord
 from discord.ext import commands
 import re
 import sqlite3
+import os
+import mimetypes
+import magic
+import shutil
 
 #    Cog to reformat messages to allow for animated emotes, regardless of nitro status.
 #    Copyright (C) 2017 Valentijn <ev1l0rd>
@@ -23,20 +27,48 @@ import sqlite3
 class Animotes:
     def __init__(self, bot):
         self.bot = bot
-        self.conn = sqlite3.connect('animotes.sqlite3')
+        self.conn = sqlite3.connect('databases/animotes.sqlite3')
         create_database(self.conn)
         self.conn.commit()
+        try:
+            self.bot.heroku_git_fs.update()
+        except AttributeError as e:
+            pass
+
+    async def remove_original_message(self, message):
+        try:
+            await message.delete()
+        except Exception:
+            pass
 
     async def on_message(self, message):
         if not message.author.bot and self.conn.cursor().execute('SELECT * FROM animotes WHERE user_id=?', (message.author.id,)).fetchone():
             channel = message.channel
             content = emote_corrector(self, message)
             if content:
-                try:
-                    await message.delete()
-                except Exception:
-                    pass
+                if message.attachments:
+                    os.makedirs('tmp')
+                    for i, attachment in enumerate(message.attachments):
+                        await attachment.save('tmp/{}'.format(i))
+
+                    for filename in os.listdir('tmp/'):
+                        try:
+                            mimetype = magic.from_file('tmp/{}'.format(filename), mime=True)
+                            mimetype = mimetypes.guess_extension(mimetype)
+                            if mimetype:
+                                os.rename(src='tmp/{}'.format(filename), dst='tmp/{0}{1}'.format(filename, mimetype))
+                        except Exception as e:
+                            pass
+
+                    files = []
+                    for filename in os.listdir('tmp'):
+                        files.append(discord.File(os.path.abspath('tmp/{}'.format(filename))))
+
+                    await self.remove_original_message(message)
+                    await channel.send(content=content, files=files)
+                    shutil.rmtree('tmp/')
                 else:
+                    await self.remove_original_message(message)
                     await channel.send(content=content)
 
     @commands.command(aliases=['unregister'])
@@ -48,8 +80,13 @@ class Animotes:
         else:
             self.conn.cursor().execute('INSERT INTO animotes VALUES (?)', (ctx.author.id,))
             message = 'You sucessfully have been opted into using using animated emotes.'
-
         self.conn.commit()
+
+        try:
+            self.bot.heroku_git_fs.update()
+        except AttributeError as e:
+            pass
+
         try:
             await ctx.message.delete()
         except discord.errors.Forbidden:
@@ -74,6 +111,11 @@ class Animotes:
 
         for page in message.pages:
             await ctx.author.send(content=page)
+
+    @commands.command()
+    async def toggle_emoji(self, ctx):
+        '''Block a specific emoji'''
+        pass
 
 
 def emote_corrector(self, message):
