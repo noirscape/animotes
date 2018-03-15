@@ -131,7 +131,27 @@ class Animotes:
     @commands.command()
     async def toggle_emoji(self, ctx):
         '''Block a specific emoji'''
-        pass
+
+    @commands.guild_only()
+    @commands.has_permissions(manage_messages=True)
+    @commands.command()
+    async def print_emotes(self, ctx):
+        '''Print all animated emoji's in the server.'''
+        message = commands.Paginator(prefix='', suffix='')
+        guild = ctx.message.guild
+        emoji = guild.emojis
+        if emoji:
+            message.add_line(f'Emotes in guild __{guild.name}__:')
+            for emoji in guild.emojis:
+                if emoji.animated:
+                    message.add_line(f'**{emoji.name}**: {emoji}')
+            message.add_line('')
+        if not message:
+            message.add_line('You don\'t have any custom emotes.')
+            message.add_line('Try adding some custom emotes in the server settings.')
+
+        for page in message.pages:
+            await ctx.send(content=page)
 
 
 def emote_corrector(self, message):
