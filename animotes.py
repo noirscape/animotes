@@ -158,9 +158,9 @@ def emote_corrector(self, message):
     '''Locate and change any emotes to emote objects'''
     r = re.compile(r':\w+:')
     _r = re.compile(r'<a:\w+:\w+>')
-    if _r.search(message.content):
+    if _r.search(message.clean_content):
         return None
-    found = r.findall(message.content)
+    found = r.findall(message.clean_content)
     emotes = []
     for em in found:
         temp = discord.utils.get(self.bot.emojis, name=em[1:-1])
@@ -171,7 +171,7 @@ def emote_corrector(self, message):
             pass  # We only care about catching this, not doing anything with it
 
     if emotes:
-        temp = message.content
+        temp = message.clean_content
         for em in set(emotes):
             temp = temp.replace(*em)
     else:
