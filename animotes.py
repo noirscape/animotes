@@ -135,6 +135,8 @@ class Animotes:
     @commands.command()
     async def react(self, ctx, emote, message_id=None):
         '''React to a specific message with the emote specified.'''
+        message_id = None if not message_id.isdigit() else int(message_id)
+
         if not message_id:
             message = await ctx.channel.history(before=ctx.message, limit=1).next()
         else:
