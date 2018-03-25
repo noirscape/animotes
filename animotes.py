@@ -133,9 +133,12 @@ class Animotes:
         '''Block a specific emoji'''
 
     @commands.command()
-    async def react(self, ctx, emote, message_id):
+    async def react(self, ctx, emote, message_id=None):
         '''React to a specific message with the emote specified.'''
-        message = await ctx.get_message(message_id)
+        if not message_id:
+            message = await ctx.channel.history(before=ctx.message, limit=1).next()
+        else:
+            message = await ctx.get_message(message_id)
         emote = discord.utils.get(self.bot.emojis, name=emote)
         await message.add_reaction(emote)
 
