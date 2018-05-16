@@ -5,8 +5,8 @@ import sqlite3
 import os
 import mimetypes
 import magic
-import shutil
 import tempfile
+import logging
 
 #    Cog to reformat messages to allow for animated emotes, regardless of nitro status.
 #    Copyright (C) 2017 Valentijn <ev1l0rd>
@@ -34,13 +34,13 @@ class Animotes:
         try:
             self.bot.heroku_git_fs.update()
         except AttributeError as e:
-            pass
+            logging.warning('NOTICE: We\'re not running on an ephemeral system. If you believe this is in error, adjust your config.')
 
     async def remove_original_message(self, message):
         try:
             await message.delete()
         except Exception:
-            pass
+            logging.exception('The bot does not have the ability to remove this message. Make sure the bot has manage message permissions.')
 
     async def parse_attachments(self, message, temporary_dir):
         for i, attachment in enumerate(message.attachments):
@@ -92,9 +92,11 @@ class Animotes:
         '''Register/Unregister from animated emotes.'''
         if self.conn.cursor().execute('SELECT * FROM animotes WHERE user_id=?', (ctx.author.id,)).fetchone():
             self.conn.cursor().execute('DELETE FROM animotes WHERE user_id=?', (ctx.author.id,))
+            logging.warning(f'User {ctx.message.author} has opted out of using animated emotes.')
             message = 'You sucessfully have been opted out of using animated emotes.'
         else:
             self.conn.cursor().execute('INSERT INTO animotes VALUES (?)', (ctx.author.id,))
+            logging.warning(f'User {ctx.message.author} has opted into using animated emotes.')
             message = 'You sucessfully have been opted into using using animated emotes.'
         self.conn.commit()
 
@@ -106,7 +108,8 @@ class Animotes:
         try:
             await ctx.message.delete()
         except discord.errors.Forbidden:
-            pass
+            logging.exception('The bot does not have the ability to remove this message. Make sure the bot has manage message permissions.')
+
         await ctx.message.author.send(content=message)
 
     @commands.command()
